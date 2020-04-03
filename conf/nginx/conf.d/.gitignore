@@ -1,0 +1,9 @@
+.idea
+.DS_Store
+.env
+docker-compose.yml
+www/*
+data/*
+log/*
+!www/localhost/
+.php_cs.cache

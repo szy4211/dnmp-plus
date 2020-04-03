@@ -28,9 +28,9 @@
 │   │   ├── php.ini                 PHP 配置文件
 │   │   ├── php-fpm.conf            PHP-FPM 配置文件
 ├── bin                             命令目录
-│   ├── mongo-rs                    Mongo 副本集 配置
-│   ├── php                         PHP 配置
-│   │   ├── extensions              PHP 扩展源码包
+│   ├── mongo-rs                    Mongo 副本集 命令
+│   ├── php                         PHP 命令
+│   │   ├── extensions              PHP 扩展源码包
 │   │   ├── Dockerfile              PHP 镜像构建文件
 ├── www                             站点代码目录
 ├── data                            数据目录

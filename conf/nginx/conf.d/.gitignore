@@ -1,9 +1,6 @@
-.idea
-.DS_Store
-.env
-docker-compose.yml
-www/*
-data/*
-log/*
-!www/localhost/
-.php_cs.cache
+*.conf
+!default.conf
+!laravel.conf.sample
+!localhost.conf
+!localhost_https.conf
+!xhgui.conf

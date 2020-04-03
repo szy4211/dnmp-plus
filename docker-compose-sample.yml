@@ -1,4 +1,5 @@
-version: "3"
+version: '3'
+
 services:
   nginx:
     image: nginx:${NGINX_VERSION}
@@ -14,38 +15,19 @@ services:
     networks:
       - default
 
-  php72:
+  php:
     build:
-      context: .
+      context: ./bin/php
       args:
-        PHP_VERSION: ${PHP72_VERSION}
+        PHP_VERSION: ${PHP_VERSION}
         ALPINE_REPOSITORIES: ${ALPINE_REPOSITORIES}
-        PHP_EXTENSIONS: ${PHP72_EXTENSIONS}
-        MORE_EXTENSION_INSTALLER: php72.sh
+        PHP_EXTENSIONS: ${PHP_EXTENSIONS}
+        MORE_EXTENSION_INSTALLER: php.sh
     volumes:
       - ${SOURCE_DIR}:/var/www/html/:rw
-      - ${PHP72_PHP_CONF_FILE}:/usr/local/etc/php/php.ini:ro
-      - ${PHP72_FPM_CONF_FILE}:/usr/local/etc/php-fpm.d/www.conf:rw
-      - ${PHP72_LOG_DIR}:/var/log/php
-    restart: always
-    cap_add:
-      - SYS_PTRACE
-    networks:
-      - default
-
-  php56:
-    build:
-      context: .
-      args:
-        PHP_VERSION: ${PHP56_VERSION}
-        ALPINE_REPOSITORIES: ${ALPINE_REPOSITORIES}
-        PHP_EXTENSIONS: ${PHP56_EXTENSIONS}
-        MORE_EXTENSION_INSTALLER: php56.sh
-    volumes:
-      - ${SOURCE_DIR}:/var/www/html/:rw
-      - ${PHP56_PHP_CONF_FILE}:/usr/local/etc/php/php.ini:ro
-      - ${PHP56_FPM_CONF_FILE}:/usr/local/etc/php-fpm.d/www.conf:rw
-      - ${PHP56_LOG_DIR}:/var/log/php
+      - ${PHP_PHP_CONF_FILE}:/usr/local/etc/php/php.ini:ro
+      - ${PHP_FPM_CONF_FILE}:/usr/local/etc/php-fpm.d/www.conf:rw
+      - ${PHP_LOG_DIR}:/var/log/php
     restart: always
     cap_add:
       - SYS_PTRACE
@@ -75,7 +57,18 @@ services:
     entrypoint: ["redis-server", "/etc/redis.conf"]
     networks:
       - default
-    
+
+  mongo:
+    image: mongo:${MONGO_VERSION}
+    ports:
+      - "${MONGO_HOST_PORT}:27017"
+    volumes:
+      - ${MONGO_DATA_DB_DIR}:/data/db:rw
+    restart: always
+    networks:
+      - default
+
+  ### 以下是可选项
 
   phpmyadmin:
     image: phpmyadmin/phpmyadmin:latest
@@ -97,22 +90,63 @@ services:
       - REDIS_1_HOST=redis
       - REDIS_1_PORT=6379
 
-  mongo:
-    image: mongo:${MONGO_VERSION}
-    ports:
-      - "${MONGO_HOST_PORT}:27017"
-    volumes:
-      - ${MONGO_DATA_DB_DIR}:/data/db:rw
-    restart: always
-    networks:
-      - default
-    # external: true
-
   mongo-express:
     image: mongo-express
     restart: always
     ports:
       - "${MONGO_EXPRESS_HOST_PORT}:8081"
+
+  ## mongo rs
+  mongo-rs-1:
+    image: mongo:${MONGO_RS_VERSION}
+    ports:
+      - "${MONGO_RS_1_HOST_PORT}:27017"
+    volumes:
+      - ${MONGO_RS_1_DATA_DB_DIR}:/data/db:rw
+    restart: always
+    networks:
+      - default
+    command: "mongod --dbpath /data/db --replSet ${MONGO_RS_NAME} --oplogSize 1 --bind_ip_all"
+
+  mongo-rs-2:
+    image: mongo:${MONGO_RS_VERSION}
+    ports:
+      - "${MONGO_RS_2_HOST_PORT}:27017"
+    volumes:
+      - ${MONGO_RS_2_DATA_DB_DIR}:/data/db:rw
+    networks:
+      - default
+    command: "mongod --dbpath /data/db --replSet ${MONGO_RS_NAME} --oplogSize 1 --bind_ip_all"
+
+  mongo-rs-3:
+    image: mongo:${MONGO_RS_VERSION}
+    ports:
+      - "${MONGO_RS_3_HOST_PORT}:27017"
+    volumes:
+      - ${MONGO_RS_3_DATA_DB_DIR}:/data/db:rw
+    restart: always
+    networks:
+      - default
+    command: "mongod --dbpath /data/db --replSet ${MONGO_RS_NAME} --oplogSize 1 --bind_ip_all"
+
+  mongo-rs-setup:
+    image: mongo:${MONGO_RS_VERSION}
+    depends_on:
+      - "mongo-rs-1"
+      - "mongo-rs-2"
+      - "mongo-rs-3"
+    links:
+      - mongo-rs-1:mongo-rs-1
+      - mongo-rs-2:mongo-rs-2
+      - mongo-rs-3:mongo-rs-3
+    volumes:
+      - ${MONGO_RS_SCRIPTS_DIR}:/scripts
+    restart: always
+    networks:
+      - default
+    environment:
+      - RS=${MONGO_RS_NAME}
+    entrypoint: "/scripts/setup.sh"
 
 networks:
   default:
